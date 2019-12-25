@@ -1,31 +1,6 @@
 #!/usr/bin/env python
 
-# The MIT License (MIT)
-#
-# Copyright (c) 2018 Sunaina Pai
-#
-# Permission is hereby granted, free of charge, to any person obtaining
-# a copy of this software and associated documentation files (the
-# "Software"), to deal in the Software without restriction, including
-# without limitation the rights to use, copy, modify, merge, publish,
-# distribute, sublicense, and/or sell copies of the Software, and to
-# permit persons to whom the Software is furnished to do so, subject to
-# the following conditions:
-#
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
 """Make static website/blog with Python."""
-
 
 import os
 import shutil
@@ -34,7 +9,7 @@ import glob
 import sys
 import json
 import datetime
-
+import marko
 
 def fread(filename):
     """Read file and close the file."""
@@ -71,7 +46,7 @@ def read_headers(text):
 
 
 def rfc_2822_format(date_str):
-    """Convert yyyy-mm-dd date string to RFC 2822 format date string."""
+    """Convert yyyy-mm-dd date string to RFC 2822 format date string for RSS"""
     d = datetime.datetime.strptime(date_str, '%Y-%m-%d')
     return d.strftime('%a, %d %b %Y %H:%M:%S +0000')
 
@@ -102,8 +77,7 @@ def read_content(filename):
         try:
             if _test == 'ImportError':
                 raise ImportError('Error forced by test')
-            import commonmark
-            text = commonmark.commonmark(text)
+            text = marko.convert(text)
         except ImportError as e:
             log('WARNING: Cannot render Markdown in {}: {}', filename, str(e))
 
@@ -175,8 +149,8 @@ def main():
     # Default parameters.
     params = {
         'base_path': '',
-        'subtitle': 'Lorem Ipsum',
-        'author': 'Admin',
+        'subtitle': 'A short post',
+        'author': 'Cameron Blandford',
         'site_url': 'http://localhost:8000',
         'current_year': datetime.datetime.now().year
     }
@@ -207,22 +181,14 @@ def main():
     blog_posts = make_pages('content/blog/*.md',
                             '_site/blog/{{ slug }}/index.html',
                             post_layout, blog='blog', **params)
-    news_posts = make_pages('content/news/*.html',
-                            '_site/news/{{ slug }}/index.html',
-                            post_layout, blog='news', **params)
 
     # Create blog list pages.
-    make_list(blog_posts, '_site/blog/index.html',
+    make_list(blog_posts, '_site/index.html',
               list_layout, item_layout, blog='blog', title='Blog', **params)
-    make_list(news_posts, '_site/news/index.html',
-              list_layout, item_layout, blog='news', title='News', **params)
 
     # Create RSS feeds.
     make_list(blog_posts, '_site/blog/rss.xml',
               feed_xml, item_xml, blog='blog', title='Blog', **params)
-    make_list(news_posts, '_site/news/rss.xml',
-              feed_xml, item_xml, blog='news', title='News', **params)
-
 
 # Test parameter to be set temporarily by unit tests.
 _test = None
